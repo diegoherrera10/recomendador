@@ -1,0 +1,46 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Tue Oct  9 16:44:41 2018
+
+@author: Diego-HJ
+"""
+
+import pandas as pd
+
+ruta_movie = "E:/Maestria/Programacion cientifica/PANDA/lab3_mafp-master/movies.csv"
+ruta_rating = "E:/Maestria/Programacion cientifica/PANDA/lab3_mafp-master/ratings.csv"
+movies = pd.read_csv(ruta_movie)
+ratings = pd.read_csv(ruta_rating)
+mixed = pd.merge(ratings,movies, on = "movieId")
+rating_prom = mixed.groupby("title").rating.mean()
+#Visualizacion del promedio de los ratings
+rating_prom = rating_prom.sort_values(ascending = False)
+rating_prom = rating_prom.to_frame()
+#Visualizacion de popularidad
+popularity = mixed.groupby("title").userId.count()
+popularity = popularity.to_frame()
+#creacion de nuevo dataframe con promedios y popularidad
+mixed_pop_prom = rating_prom.join(popularity)
+mixed_pop_prom.rename(columns={'rating': 'promedio_rating', 'userId': 'numero_califs'}, inplace=True)
+
+#pivotear userId
+
+puntuacion = mixed.pivot_table(index='userId', columns='title', values='rating')
+puntuacion = puntuacion.fillna(0)
+#lista de pelicula popular
+popular = puntuacion.filter(items=["Index", 'Forrest Gump (1994)'])
+
+#correlacion
+correlation = puntuacion.corrwith(popular["Forrest Gump (1994)"])
+correlation = correlation.to_frame()
+correlation.rename(columns={0: 'Correlacion'}, inplace=True)
+
+correlation = correlation.join(mixed_pop_prom["numero_califs"])
+correlation = correlation.sort_values(by="Correlacion", ascending = False)
+test = correlation.numero_califs.quantile(0.9)
+#test = test*0.6
+
+sugerencia = correlation[correlation["numero_califs"] > correlation.numero_califs.quantile(0.9)]
+
+print (sugerencia)
+
